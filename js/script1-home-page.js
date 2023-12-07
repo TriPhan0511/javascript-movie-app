@@ -2,97 +2,7 @@ const API_KEY = '72597d8d62e1a0cc5f6e35a022fa82ea'
 
 const global = {
   currentPage: window.location.pathname,
-  urlParams: new URLSearchParams(window.location.search),
 }
-
-async function fetchMovieDetails() {
-  const id = global.urlParams.has('id') ? global.urlParams.get('id') : ''
-  try {
-    let response = await fetch(
-      `https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}`
-    )
-    if (!response.ok) {
-      throw new Error('Request Failed.')
-    }
-    response = await response.json()
-    console.log(response)
-    const title = response.title
-    const voteAverage = response.vote_average
-    const releaseDate = new Date(response.release_date).toLocaleDateString()
-    const overview = response.overview
-    const genres = response.genres
-    const homepage = response.homepage
-    const budget = response.budget
-    const revenue = response.revenue
-    const runtime = response.runtime
-    const status = response.status
-    const productionCompanies = response.production_companies.map((c) => c.name)
-
-    console.log(title)
-    console.log(voteAverage)
-    console.log(releaseDate)
-    console.log(overview)
-    console.log(genres)
-    console.log(homepage)
-    console.log(budget)
-    console.log(revenue)
-    console.log(runtime)
-    console.log(status)
-    console.log(productionCompanies)
-  } catch (error) {
-    console.error(error)
-  }
-}
-// function fetchMovieDetails() {
-//   const id = global.urlParams.has('id') ? global.urlParams.get('id') : ''
-//   fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}`)
-//     .then((response) => {
-//       if (!response.ok) {
-//         throw new Error('Request Failed.')
-//       }
-//       return response.json()
-//     })
-//     .then((response) => {
-//       console.log(response)
-//       const title = response.title
-//       const voteAverage = response.vote_average
-//       const releaseDate = new Date(response.release_date).toLocaleDateString()
-//       const overview = response.overview
-//       const genres = response.genres
-//       const homepage = response.homepage
-//       const budget = response.budget
-//       const revenue = response.revenue
-//       const runtime = response.runtime
-//       const status = response.status
-//       const productionCompanies = response.production_companies.map(
-//         (c) => c.name
-//       )
-
-//       console.log(title)
-//       console.log(voteAverage)
-//       console.log(releaseDate)
-//       console.log(overview)
-//       console.log(genres)
-//       console.log(homepage)
-//       console.log(budget)
-//       console.log(revenue)
-//       console.log(runtime)
-//       console.log(status)
-//       console.log(productionCompanies)
-//     })
-//     .catch((err) => console.error(err))
-// }
-
-// TEST
-// function getQueryStrings() {
-//   if (global.urlParams.has('id')) {
-//     console.log(global.urlParams.get('id'))
-//     console.log(typeof global.urlParams.get('id'))
-//   } else {
-//     console.log('no id')
-//   }
-// }
-// getQueryStrings()
 
 // Highlight active link
 function highlightActiveLink(className) {
@@ -190,8 +100,7 @@ function init() {
       console.log('Shows')
       break
     case '/movie-details.html':
-      // console.log('Movie Details')
-      fetchMovieDetails()
+      console.log('Movie Details')
       break
     case '/tv-details.html':
       console.log('Show Details')
