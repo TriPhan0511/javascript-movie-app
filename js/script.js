@@ -2,10 +2,15 @@ const global = {
   currentPage: window.location.pathname,
 }
 
-const activate = (num) => {
-  //   document.querySelector(`.nav-link:nth-child(${num})`)?.classList.add('active')
-  console.log(document.querySelectorAll('.nav-link'))[1]
-  document.querySelector(`.nav-link`)?.classList.add('active')
+// Highlight active link
+function highlightActiveLink(className) {
+  const currentActiveLink =
+    global.currentPage === '/index.html'
+      ? document.querySelector(`.${className}`)
+      : Array.from(document.querySelectorAll(`.${className}`))?.filter(
+          (link) => link.getAttribute('href') === global.currentPage
+        )[0]
+  currentActiveLink?.classList?.toggle('active')
 }
 
 // Init App
@@ -14,11 +19,9 @@ function init() {
     case '/':
     case '/index.html':
       console.log('Home')
-      activate(1)
       break
     case '/shows.html':
       console.log('Shows')
-      activate(2)
       break
     case '/movie-details.html':
       console.log('Movie Details')
@@ -30,6 +33,8 @@ function init() {
       console.log('Search')
       break
   }
+
+  highlightActiveLink('nav-link')
 }
 
 document.addEventListener('DOMContentLoaded', init)

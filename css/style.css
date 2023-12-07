@@ -338,8 +338,3 @@ section h2 {
 .alert-error {
   background: red;
 }
-/* ------------------------------------------------------ */
-/* TEST */
-.nav-link:nth-child(1) {
-  color: orange;
-}
