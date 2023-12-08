@@ -16,6 +16,58 @@ function highlightActiveLink(className) {
   currentActiveLink?.classList?.toggle('active')
 }
 
+const person = {
+  name: 'John',
+}
+
+// ---------- tv-details.html ----------
+async function fetchShowDetails() {
+  const id = global.urlParams.has('id') ? global.urlParams.get('id') : ''
+  try {
+    let response = await fetch(
+      `https://api.themoviedb.org/3/tv/${id}?api_key=${API_KEY}`
+    )
+    if (!response.ok) {
+      throw new Error('Request Failed.')
+    }
+    response = await response.json()
+    response = {
+      ...response,
+      title: response.name,
+      last_episode_to_air: response.last_episode_to_air.name,
+    }
+    document
+      .querySelector('section.container')
+      ?.appendChild(createDetails(false, response))
+    // ?.appendChild(createDetails(response))
+  } catch (error) {
+    console.log(error)
+    document
+      .querySelector('section.container')
+      ?.appendChild(createErrorAlert(error))
+  }
+}
+
+function createShowInfo(number_of_episodes, last_episode_to_air, status) {
+  const infoList = document.createElement('ul')
+  const infoArr = [
+    { k: 'Number Of Episodes: ', v: number_of_episodes },
+    { k: 'Last Episode To Air', v: last_episode_to_air },
+    { k: 'Status', v: status },
+  ]
+  infoArr.forEach(({ k, v }) => {
+    const li = document.createElement('li')
+    const span = document.createElement('span')
+    span.className = 'text-secondary'
+    span.appendChild(document.createTextNode(`${k}: `))
+    li.appendChild(span)
+    li.appendChild(document.createTextNode(v))
+    infoList.appendChild(li)
+  })
+
+  return infoList
+}
+
 // ---------- shows.html ----------
 async function fetchPopularShows(pageNum) {
   const endpoint = `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&page=${pageNum}`
@@ -54,7 +106,7 @@ async function fetchMovieDetails() {
     response = await response.json()
     document
       .querySelector('section.container')
-      ?.appendChild(createDetails(response))
+      ?.appendChild(createDetails(true, response))
   } catch (error) {
     document
       .querySelector('section.container')
@@ -63,21 +115,26 @@ async function fetchMovieDetails() {
 }
 
 // Create movie details
-function createDetails({
-  title,
-  poster_path,
-  vote_average,
-  release_date,
-  overview,
-  genres,
-  homepage,
-  budget,
-  revenue,
-  runtime,
-  status,
-  production_companies,
-  backdrop_path,
-}) {
+function createDetails(
+  isMovie,
+  {
+    title,
+    poster_path,
+    vote_average,
+    release_date,
+    overview,
+    genres,
+    homepage,
+    budget,
+    revenue,
+    runtime,
+    status,
+    production_companies,
+    backdrop_path,
+    number_of_episodes,
+    last_episode_to_air,
+  }
+) {
   const details = document.createElement('div')
   details.setAttribute('id', 'movie-details')
   details.setAttribute(
@@ -153,9 +210,34 @@ function createDetails({
   detailsBottom.className = 'details-bottom'
 
   const heading2 = document.createElement('h2')
-  heading2.appendChild(document.createTextNode('Movie Info'))
+  const text = isMovie ? 'Movie' : 'Show'
+  heading2.appendChild(document.createTextNode(`${text} Info`))
+  // heading2.appendChild(document.createTextNode('Movie Info'))
   detailsBottom.appendChild(heading2)
 
+  // Info division
+  const infoList = isMovie
+    ? createMovieInfo(budget, revenue, runtime, status)
+    : createShowInfo(number_of_episodes, last_episode_to_air, status)
+  detailsBottom.appendChild(infoList)
+
+  const h4 = document.createElement('h4')
+  h4.appendChild(document.createTextNode('Production Companies'))
+  detailsBottom.appendChild(h4)
+
+  const companies = document.createElement('div')
+  companies.className = 'list-group'
+  companies.appendChild(
+    document.createTextNode(production_companies.map((c) => c.name).join(', '))
+  )
+  detailsBottom.appendChild(companies)
+
+  details.appendChild(detailsBottom)
+
+  return details
+}
+
+function createMovieInfo(budget, revenue, runtime, status) {
   const infoList = document.createElement('ul')
   const infoArr = [
     { k: 'Budget', v: budget },
@@ -189,22 +271,8 @@ function createDetails({
     li.appendChild(document.createTextNode(liText))
     infoList.appendChild(li)
   })
-  detailsBottom.appendChild(infoList)
 
-  const h4 = document.createElement('h4')
-  h4.appendChild(document.createTextNode('Production Companies'))
-  detailsBottom.appendChild(h4)
-
-  const companies = document.createElement('div')
-  companies.className = 'list-group'
-  companies.appendChild(
-    document.createTextNode(production_companies.map((c) => c.name).join(', '))
-  )
-  detailsBottom.appendChild(companies)
-
-  details.appendChild(detailsBottom)
-
-  return details
+  return infoList
 }
 // function createDetails({
 //   title,
@@ -403,8 +471,8 @@ function createCard(isMovie, id, imageSrc, title, releaseDate) {
   card.className = 'card'
 
   const link = document.createElement('a')
-  const page = isMovie ? 'movie-details.html' : 'tv-details.html?'
-  link.setAttribute('href', `${page}?id=${id}`)
+  const page = isMovie ? 'movie-details' : 'tv-details'
+  link.setAttribute('href', `${page}.html?id=${id}`)
   const img = document.createElement('img')
   img.className = 'card-img-top'
   img.setAttribute('src', imageSrc)
@@ -447,7 +515,8 @@ function init() {
       fetchMovieDetails()
       break
     case '/tv-details.html':
-      console.log('Show Details')
+      // console.log('Show Details')
+      fetchShowDetails()
       break
     case '/search.html':
       console.log('Search')
