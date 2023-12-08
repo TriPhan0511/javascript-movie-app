@@ -15,84 +15,152 @@ async function fetchMovieDetails() {
       throw new Error('Request Failed.')
     }
     response = await response.json()
-    console.log(response)
-    const title = response.title
-    const voteAverage = response.vote_average
-    const releaseDate = new Date(response.release_date).toLocaleDateString()
-    const overview = response.overview
-    const genres = response.genres
-    const homepage = response.homepage
-    const budget = response.budget
-    const revenue = response.revenue
-    const runtime = response.runtime
-    const status = response.status
-    const productionCompanies = response.production_companies.map((c) => c.name)
-
-    console.log(title)
-    console.log(voteAverage)
-    console.log(releaseDate)
-    console.log(overview)
-    console.log(genres)
-    console.log(homepage)
-    console.log(budget)
-    console.log(revenue)
-    console.log(runtime)
-    console.log(status)
-    console.log(productionCompanies)
+    document
+      .querySelector('section.container')
+      ?.appendChild(createMovieDetails(response))
   } catch (error) {
     console.error(error)
   }
 }
-// function fetchMovieDetails() {
-//   const id = global.urlParams.has('id') ? global.urlParams.get('id') : ''
-//   fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}`)
-//     .then((response) => {
-//       if (!response.ok) {
-//         throw new Error('Request Failed.')
-//       }
-//       return response.json()
-//     })
-//     .then((response) => {
-//       console.log(response)
-//       const title = response.title
-//       const voteAverage = response.vote_average
-//       const releaseDate = new Date(response.release_date).toLocaleDateString()
-//       const overview = response.overview
-//       const genres = response.genres
-//       const homepage = response.homepage
-//       const budget = response.budget
-//       const revenue = response.revenue
-//       const runtime = response.runtime
-//       const status = response.status
-//       const productionCompanies = response.production_companies.map(
-//         (c) => c.name
-//       )
 
-//       console.log(title)
-//       console.log(voteAverage)
-//       console.log(releaseDate)
-//       console.log(overview)
-//       console.log(genres)
-//       console.log(homepage)
-//       console.log(budget)
-//       console.log(revenue)
-//       console.log(runtime)
-//       console.log(status)
-//       console.log(productionCompanies)
-//     })
-//     .catch((err) => console.error(err))
-// }
+// Create movie details
+function createMovieDetails({
+  title,
+  poster_path,
+  vote_average,
+  release_date,
+  overview,
+  genres,
+  homepage,
+  budget,
+  revenue,
+  runtime,
+  status,
+  production_companies,
+}) {
+  const movieDetails = document.createElement('div')
+  movieDetails.setAttribute('id', 'movie-details')
 
-// TEST
-// function getQueryStrings() {
-//   if (global.urlParams.has('id')) {
-//     console.log(global.urlParams.get('id'))
-//     console.log(typeof global.urlParams.get('id'))
-//   } else {
-//     console.log('no id')
-//   }
-// }
-// getQueryStrings()
+  const detailsTop = document.createElement('div')
+  detailsTop.className = 'details-top'
+
+  const imageDiv = document.createElement('div')
+  const img = document.createElement('img')
+  img.className = 'card-img-top'
+  img.setAttribute('src', `https://image.tmdb.org/t/p/original/${poster_path}`)
+  img.setAttribute('alt', title)
+  imageDiv.appendChild(img)
+  detailsTop.appendChild(imageDiv)
+
+  const div = document.createElement('div')
+  const h2 = document.createElement('h2')
+  h2.appendChild(document.createTextNode(title))
+  div.appendChild(h2)
+
+  const votePara = document.createElement('p')
+  const icon = document.createElement('i')
+  icon.className = 'fas fa-star text-primary'
+  votePara.appendChild(icon)
+  votePara.appendChild(
+    document.createTextNode(` ${parseFloat(vote_average).toFixed(1)} / 10`)
+  )
+  div.appendChild(votePara)
+
+  const releaseDatePara = document.createElement('p')
+  releaseDatePara.className = 'text-muted'
+  releaseDatePara.appendChild(
+    document.createTextNode(
+      `Release Date: ${new Date(release_date).toLocaleDateString()}`
+    )
+  )
+  div.appendChild(releaseDatePara)
+
+  const overviewPara = document.createElement('p')
+  overviewPara.appendChild(document.createTextNode(overview))
+  div.appendChild(overviewPara)
+
+  const h5 = document.createElement('h5')
+  h5.appendChild(document.createTextNode('Genres'))
+  div.appendChild(h5)
+
+  const ul = document.createElement('ul')
+  ul.className = 'list-group'
+  genres
+    .map((genre) => genre.name)
+    .forEach((name) => {
+      const li = document.createElement('li')
+      li.appendChild(document.createTextNode(name))
+      ul.appendChild(li)
+    })
+  div.appendChild(ul)
+
+  const link = document.createElement('a')
+  link.className = 'btn'
+  link.setAttribute('href', homepage)
+  link.setAttribute('target', '_blank')
+  link.appendChild(document.createTextNode('Visit Movie Homepage'))
+  div.appendChild(link)
+  detailsTop.appendChild(div)
+
+  movieDetails.appendChild(detailsTop)
+
+  const detailsBottom = document.createElement('div')
+  detailsBottom.className = 'details-bottom'
+
+  const heading2 = document.createElement('h2')
+  heading2.appendChild(document.createTextNode('Movie Info'))
+  detailsBottom.appendChild(heading2)
+
+  const infoList = document.createElement('ul')
+  const infoArr = [
+    { k: 'Budget', v: budget },
+    { k: 'Revenue', v: revenue },
+    { k: 'Runtime', v: runtime },
+    { k: 'Status', v: status },
+  ]
+  infoArr.forEach(({ k, v }) => {
+    const li = document.createElement('li')
+    const span = document.createElement('span')
+    span.className = 'text-secondary'
+    span.appendChild(document.createTextNode(`${k}: `))
+    li.appendChild(span)
+    let liText = ''
+    switch (k.toLowerCase()) {
+      case 'status':
+        liText = v
+        break
+      case 'runtime':
+        liText = `${v} minutes`
+        break
+      default:
+        liText = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0,
+        }).format(v)
+        break
+    }
+
+    li.appendChild(document.createTextNode(liText))
+    infoList.appendChild(li)
+  })
+  detailsBottom.appendChild(infoList)
+
+  const h4 = document.createElement('h4')
+  h4.appendChild(document.createTextNode('Production Companies'))
+  detailsBottom.appendChild(h4)
+
+  const companies = document.createElement('div')
+  companies.className = 'list-group'
+  companies.appendChild(
+    document.createTextNode(production_companies.map((c) => c.name).join(', '))
+  )
+  detailsBottom.appendChild(companies)
+
+  movieDetails.appendChild(detailsBottom)
+
+  return movieDetails
+}
 
 // Highlight active link
 function highlightActiveLink(className) {
