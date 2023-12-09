@@ -16,8 +16,53 @@ function highlightActiveLink(className) {
   currentActiveLink?.classList?.toggle('active')
 }
 
-const person = {
-  name: 'John',
+// ---------- search.html?type=movie&search-term=freelance ----------
+async function search() {
+  let isMovie
+  const type = global.urlParams.get('type')
+  const searchTerm = global.urlParams.get('search-term')
+  console.log(type)
+  console.log(searchTerm)
+  // Check type
+  if (type === 'movie') {
+    isMovie = true
+  } else if (type === 'tv') {
+    isMovie = false
+  } else {
+    return
+  }
+  // Check search-term
+  if (!searchTerm || searchTerm.trim() === '') {
+    return
+  }
+  const textMovieOrTv = isMovie ? 'movie' : 'tv'
+  try {
+    let response = await fetch(
+      `https://api.themoviedb.org/3/search/${textMovieOrTv}?api_key=${API_KEY}&query=${searchTerm}`
+    )
+    if (!response.ok) {
+      throw new Error('Request Failed!')
+    }
+    response = await response.json()
+    console.log(response)
+    isMovie
+      ? createMoviesOrShows(
+          isMovie,
+          response.results,
+          document.querySelector('#search-results')
+        )
+      : createMoviesOrShows(
+          isMovie,
+          response.results.map((item) => ({
+            ...item,
+            title: item.name,
+            release_date: item.first_air_date,
+          })),
+          document.querySelector('#search-results')
+        )
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 // ---------- tv-details.html ----------
@@ -62,10 +107,7 @@ async function fetchPopularShows(pageNum) {
       title: item.name,
       release_date: item.first_air_date,
     }))
-    const showsDiv = document.querySelector('#popular-shows')
-    if (showsDiv) {
-      createMoviesOrShows(false, shows, showsDiv)
-    }
+    createMoviesOrShows(false, shows, document.querySelector('#popular-shows'))
   } catch (error) {
     document
       .querySelector('#popular-shows')
@@ -292,10 +334,9 @@ function createDetails({
     const imageDiv = document.createElement('div')
     const img = document.createElement('img')
     img.className = 'card-img-top'
-    img.setAttribute(
-      'src',
-      `https://image.tmdb.org/t/p/original/${poster_path}`
-    )
+    let imageSrc = `https://image.tmdb.org/t/p/original/${poster_path}`
+    imageSrc = imageSrc.includes('null') ? 'images/no-image.jpg' : imageSrc
+    img.setAttribute('src', imageSrc)
     img.setAttribute('alt', title)
     imageDiv.appendChild(img)
     return imageDiv
@@ -312,10 +353,11 @@ async function fetchPopularMovies(pageNum) {
       throw new Error('Request Failed.')
     }
     response = await response.json()
-    const moviesDiv = document.querySelector('#popular-movies')
-    if (moviesDiv) {
-      createMoviesOrShows(true, response.results, moviesDiv)
-    }
+    createMoviesOrShows(
+      true,
+      response.results,
+      document.querySelector('#popular-movies')
+    )
   } catch (error) {
     document
       .querySelector('#popular-movies')
@@ -327,11 +369,13 @@ async function fetchPopularMovies(pageNum) {
 function createMoviesOrShows(isMovie, arr, ele) {
   if (ele) {
     arr.forEach(({ id, title, poster_path, release_date }) => {
+      let imageSrc = `https://image.tmdb.org/t/p/original/${poster_path}`
+      imageSrc = imageSrc.includes('null') ? 'images/no-image.jpg' : imageSrc
       ele.appendChild(
         createCard(
           isMovie,
           id,
-          `https://image.tmdb.org/t/p/original/${poster_path}`,
+          imageSrc,
           title,
           new Date(release_date).toLocaleDateString()
         )
@@ -404,6 +448,7 @@ function init() {
       break
     case '/search.html':
       console.log('Search')
+      search()
       break
   }
 
