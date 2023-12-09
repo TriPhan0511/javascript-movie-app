@@ -1,3 +1,5 @@
+console.log('Hello')
+
 const API_KEY = '72597d8d62e1a0cc5f6e35a022fa82ea'
 
 const global = {
@@ -17,25 +19,42 @@ function highlightActiveLink(className) {
 }
 
 // ---------- search.html?type=movie&search-term=freelance ----------
+function onSubmit(e) {
+  const input = e.target.querySelector('input#search-term')
+  if (!input || input.value.trim() === '') {
+    alert('Please enter search term!')
+    input.value = ''
+    input.focus()
+    e.preventDefault()
+  }
+}
+
 async function search() {
-  let isMovie
   const type = global.urlParams.get('type')
   const searchTerm = global.urlParams.get('search-term')
-  console.log(type)
-  console.log(searchTerm)
+  let isMovie
+  let textMovieOrTv
+  const rdMovie = document.querySelector('#movie')
+  const rdShow = document.querySelector('#tv')
+
   // Check type
   if (type === 'movie') {
     isMovie = true
+    rdMovie.checked = true
+    textMovieOrTv = 'movie'
   } else if (type === 'tv') {
     isMovie = false
+    rdShow.checked = true
+    textMovieOrTv = 'tv'
   } else {
     return
   }
+
   // Check search-term
   if (!searchTerm || searchTerm.trim() === '') {
     return
   }
-  const textMovieOrTv = isMovie ? 'movie' : 'tv'
+
   try {
     let response = await fetch(
       `https://api.themoviedb.org/3/search/${textMovieOrTv}?api_key=${API_KEY}&query=${searchTerm}`
@@ -44,7 +63,6 @@ async function search() {
       throw new Error('Request Failed!')
     }
     response = await response.json()
-    console.log(response)
     isMovie
       ? createMoviesOrShows(
           isMovie,
@@ -431,19 +449,19 @@ function init() {
   switch (global.currentPage) {
     case '/':
     case '/index.html':
-      // console.log('Home')
+      console.log('Home')
       fetchPopularMovies(1)
       break
     case '/shows.html':
-      // console.log('Shows')
+      console.log('Shows')
       fetchPopularShows(1)
       break
     case '/movie-details.html':
-      // console.log('Movie Details')
+      console.log('Movie Details')
       fetchMovieDetails()
       break
     case '/tv-details.html':
-      // console.log('Show Details')
+      console.log('Show Details')
       fetchShowDetails()
       break
     case '/search.html':
@@ -453,6 +471,9 @@ function init() {
   }
 
   highlightActiveLink('nav-link')
+  document
+    .querySelector('form.search-form')
+    ?.addEventListener('submit', onSubmit)
 }
 
 document.addEventListener('DOMContentLoaded', init)
