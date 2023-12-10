@@ -66,7 +66,7 @@ async function displayPopularShows() {
 async function displayMovieDetails() {
   // const movieId = window.location.search.split('=')[1]
   const movieId = new URLSearchParams(window.location.search).get('id')
-  const {
+  let {
     title,
     poster_path,
     vote_average,
@@ -79,17 +79,24 @@ async function displayMovieDetails() {
     runtime,
     status,
     production_companies,
+    backdrop_path,
   } = await fetchAPIData(`movie/${movieId}`)
+  // Overlay for background image
+  displayBackgroundImage('movie', backdrop_path)
+  // budget = `$${addCommasToNumber(budget)}`
+  // revenue = `$${addCommasToNumber(revenue)}`
   const currencyFormat = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
   })
+  budget = currencyFormat.format(budget)
+  revenue = currencyFormat.format(revenue)
   const imgSrc = poster_path
     ? `https://image.tmdb.org/t/p/w500/${poster_path}`
     : '../images/no-image.jpg'
-
   const div = document.createElement('div')
+
   div.innerHTML = `
     <div class="details-top">
       <div>
@@ -119,24 +126,107 @@ async function displayMovieDetails() {
     <div class="details-bottom">
       <h2>Movie Info</h2>
       <ul>
-        <li><span class="text-secondary">Budget:</span> ${currencyFormat.format(
-          budget
-        )}</li>
-        <li><span class="text-secondary">Revenue:</span> ${currencyFormat.format(
-          revenue
-        )}</li>
+        <li><span class="text-secondary">Budget:</span> ${budget}</li>
+        <li><span class="text-secondary">Revenue:</span> ${revenue}</li>
         <li><span class="text-secondary">Runtime:</span> ${runtime} minutes</li>
         <li><span class="text-secondary">Status:</span> ${status}</li>
       </ul>
       <h4>Production Companies</h4>
       <div class="list-group">${production_companies
-        .map((c) => c.name)
+        .map((c) => `<span>${c.name}</span>`)
         .join(', ')}</div>
     </div>
   `
   document.querySelector('#movie-details')?.appendChild(div)
+}
 
-  const div2 = document.querySelector('#movie-details')
+// Display Show Details
+async function displayShowDetails() {
+  const showId = new URLSearchParams(window.location.search).get('id')
+  let {
+    name,
+    poster_path,
+    vote_average,
+    last_air_date,
+    overview,
+    genres,
+    homepage,
+    status,
+    production_companies,
+    backdrop_path,
+    number_of_episodes,
+    last_episode_to_air,
+  } = await fetchAPIData(`tv/${showId}`)
+  displayBackgroundImage('tv', backdrop_path) // Overlay for background image
+  const imgSrc = poster_path
+    ? `https://image.tmdb.org/t/p/w500/${poster_path}`
+    : '../images/no-image.jpg'
+
+  const div = document.createElement('div')
+  div.innerHTML = `
+    <div class="details-top">
+      <div>
+        <img
+          src="${imgSrc}"
+          class="card-img-top"
+          alt="${name}"
+        />
+      </div>
+      <div>
+        <h2>${name}</h2>
+        <p>
+          <i class="fas fa-star text-primary"></i>
+          ${vote_average.toFixed(1)} / 10
+        </p>
+        <p class="text-muted">Last Air Date: ${new Date(
+          last_air_date
+        ).toLocaleDateString()}</p>
+        <p>${overview}</p>
+        <h5>Genres</h5>
+        <ul class="list-group">
+        ${genres.map((g) => `<li>${g.name}</li>`).join('')}
+        </ul>
+        <a href="${homepage}" target="_blank" class="btn">Visit Show Homepage</a>
+      </div>
+    </div>
+    <div class="details-bottom">
+      <h2>Show Info</h2>
+      <ul>
+        <li><span class="text-secondary">Number Of Episodes:</span> ${number_of_episodes}</li>
+        <li><span class="text-secondary">Last Episode To Air:</span> ${
+          last_episode_to_air.name
+        }</li>
+        <li><span class="text-secondary">Status:</span> ${status}</li>
+      </ul>
+      <h4>Production Companies</h4>
+      <div class="list-group">${production_companies
+        .map((c) => `<span>${c.name}</span>`)
+        .join(', ')}</div>
+    </div>
+  `
+  document.querySelector('#show-details')?.appendChild(div)
+}
+
+// Display Backdrop On Details Page
+function displayBackgroundImage(type, backgroundPath) {
+  const overlayDiv = document.createElement('div')
+  overlayDiv.style.backgroundImage = `url(https://image.tmdb.org/t/p/original/${backgroundPath})`
+  overlayDiv.style.backgroundSize = 'cover'
+  overlayDiv.style.backgroundPosition = 'center'
+  overlayDiv.style.backgroundRepeat = 'no-repeat'
+  overlayDiv.style.height = '100vh'
+  overlayDiv.style.width = '100vw'
+  overlayDiv.style.position = 'absolute'
+  overlayDiv.style.top = '0'
+  overlayDiv.style.left = '0'
+  overlayDiv.style.zIndex = '-1'
+  overlayDiv.style.opacity = '0.1'
+
+  if (type === 'movie') {
+    document.querySelector('#movie-details')?.appendChild(overlayDiv)
+  } else {
+    document.querySelector('#show-details')?.appendChild(overlayDiv)
+  }
 }
 
 // Fetch data from the https://developer.themoviedb.org/docs API
@@ -170,6 +260,10 @@ function highlightActiveLink() {
   })
 }
 
+function addCommasToNumber(number) {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
 // Init App
 function init() {
   switch (global.currentPage) {
@@ -187,6 +281,7 @@ function init() {
       displayMovieDetails()
       break
     case '/tv-details.html':
+      displayShowDetails()
       console.log('TV Details')
       break
     case '/search.html':
