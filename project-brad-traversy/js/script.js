@@ -229,6 +229,36 @@ function displayBackgroundImage(type, backgroundPath) {
   }
 }
 
+// Display Slider Movies
+async function displaySlider() {
+  const { results } = await fetchAPIData('movie/now_playing')
+  results.forEach(({ id, title, poster_path, vote_average }) => {
+    const imgSrc = poster_path
+      ? `https://image.tmdb.org/t/p/w500/${poster_path}`
+      : './images/no-image.jpg'
+    const div = document.createElement('div')
+    div.classList.add('swiper-slide')
+    div.innerHTML = `
+      <a href="movie-details.html?id=${id}">
+        <img src="${imgSrc}" alt="${title}" />
+      </a>
+      <h4 class="swiper-rating">
+        <i class="fas fa-star text-secondary"></i> ${vote_average.toFixed(
+          1
+        )} / 10
+      </h4>
+    `
+    document.querySelector('.swiper-wrapper')?.appendChild(div)
+    initSwiper()
+  })
+}
+
+function initSwiper() {
+  const swiper = new Swiper('.swiper',{
+    slidesPerView: 1,
+  })
+}
+
 // Fetch data from the https://developer.themoviedb.org/docs API
 async function fetchAPIData(endpoint) {
   const API_KEY = '72597d8d62e1a0cc5f6e35a022fa82ea'
@@ -269,23 +299,19 @@ function init() {
   switch (global.currentPage) {
     case '/':
     case '/index.html':
-      console.log('Home')
+      displaySlider()
       displayPopularMovies()
       break
     case '/shows.html':
-      console.log('Shows')
       displayPopularShows()
       break
     case '/movie-details.html':
-      console.log('Movie Details')
       displayMovieDetails()
       break
     case '/tv-details.html':
       displayShowDetails()
-      console.log('TV Details')
       break
     case '/search.html':
-      console.log('Search')
       break
   }
 
