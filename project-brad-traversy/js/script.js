@@ -5,6 +5,7 @@ const global = {
     type: '',
     page: 1,
     totalPages: 1,
+    totalResults: 0,
   },
   api: {
     apiKey: '72597d8d62e1a0cc5f6e35a022fa82ea',
@@ -245,8 +246,10 @@ async function search() {
   global.search.type = urlParams.get('type')
   global.search.term = urlParams.get('search-term')
   if (global.search.term) {
-    const { results, total_pages, page } = await searchAPIData()
-    console.log(results.length)
+    const { results, total_pages, page, total_results } = await searchAPIData()
+    global.search.page = page
+    global.search.totalPages = total_pages
+    global.search.totalResults = total_results
     if (results.length === 0) {
       showAlert('No results found.')
       return
@@ -296,14 +299,34 @@ function displaySearchResults(results) {
       />
       </a>
       <div class="card-body">
-      <h5 class="card-title">${title}</h5>
-      <p class="card-text">
-        <small class="text-muted">${dateString}</small>
-      </p>
+        <h5 class="card-title">${title}</h5>
+        <p class="card-text">
+          <small class="text-muted">${dateString}</small>
+        </p>
       </div>
       `
+    document.querySelector('#search-results-heading').innerHTML = `
+      <h2>${results.length} of ${global.search.totalResults} Results for ${global.search.term}</h2>
+    `
     document.querySelector('#search-results')?.appendChild(div)
   })
+  displayPagination()
+}
+
+// Create & Display Pagination For Search
+function displayPagination() {
+  const div = document.createElement('div')
+  div.classList.add('pagination')
+  div.innerHTML = `
+    <button class="btn btn-primary" id="prev">Prev</button>
+    <button class="btn btn-primary" id="next">Next</button>
+    <div class="page-counter">Page ${global.search.page} of ${global.search.totalPages}</div>
+  `
+  document.querySelector('#pagination')?.appendChild(div)
+  global.search.page === 1 &&
+    document.querySelector('button#prev2')?.classList?.add('disabled')
+  global.search.page === global.search.totalPages &&
+    document.querySelector('button#next')?.classList?.add('disabled')
 }
 
 // Display Slider Movies

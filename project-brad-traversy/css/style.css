@@ -61,12 +61,14 @@ ul {
   color: #000;
 }
 
-.btn:disabled {
+/* .btn:disabled { */
+.btn.disabled {
   border-color: #ccc;
   cursor: not-allowed;
 }
 
-.btn:disabled:hover {
+/* .btn:disabled:hover { */
+.btn.disabled:hover {
   background: transparent;
   color: #fff;
 }
