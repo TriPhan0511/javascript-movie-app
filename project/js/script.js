@@ -34,9 +34,7 @@ function init() {
       break
     case '/movie-details.html':
       console.log('Movie Details')
-      displayMovieDetails('movie/897087')
-      // displayMovieDetails('movie/movie_id')
-      // 897087
+      displayMovieDetails()
       break
     case '/tv-details.html':
       console.log('Show Details')
@@ -90,13 +88,121 @@ async function displayPopularShows() {
 }
 
 // Display movie details
-async function displayMovieDetails(endpoint) {
-  const res = await fetchData(endpoint)
-  // console.log(res)
-  const div = document.createElement('div')
-  div.appendChild(createDetailsTop())
-  div.appendChild(createDetailsTBottom())
-  document.querySelector('#movie-details')?.appendChild(div)
+async function displayMovieDetails() {
+  const urlParams = new URLSearchParams(window.location.search)
+  const id = urlParams.get('id')
+  if (id) {
+    const {
+      poster_path,
+      title,
+      vote_average,
+      release_date,
+      overview,
+      homepage,
+      genres,
+      budget,
+      revenue,
+      runtime,
+      status,
+      production_countries,
+    } = await fetchData(`movie/${id}`)
+
+    const imgSrc = poster_path
+      ? `${global.imagePath}w500${poster_path}`
+      : '/images/no-image.jpg'
+    const releaseDateString = `Release Date: ${new Date(
+      release_date
+    ).toLocaleDateString()}`
+    const div = document.createElement('div')
+
+    const currencyFormat = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    })
+    // Details Top
+    div.appendChild(
+      createDetailsTop(
+        imgSrc,
+        title,
+        vote_average.toFixed(1),
+        releaseDateString,
+        overview,
+        homepage,
+        genres
+      )
+    )
+    // Details Bottom
+    div.appendChild(
+      createMovieDetailsBottom(
+        currencyFormat.format(budget),
+        currencyFormat.format(revenue),
+        `${runtime} minutes`,
+        status,
+        production_countries.map((c) => c.name)
+      )
+    )
+    document.querySelector('#movie-details')?.appendChild(div)
+  }
+}
+
+// Display tv show details
+async function displayShowDetails() {
+  const urlParams = new URLSearchParams(window.location.search)
+  const id = urlParams.get('id')
+  if (id) {
+    const {
+      poster_path,
+      title,
+      vote_average,
+      release_date,
+      overview,
+      homepage,
+      genres,
+      budget,
+      revenue,
+      runtime,
+      status,
+      production_countries,
+    } = await fetchData(`movie/${id}`)
+
+    const imgSrc = poster_path
+      ? `${global.imagePath}w500${poster_path}`
+      : '/images/no-image.jpg'
+    const releaseDateString = `Release Date: ${new Date(
+      release_date
+    ).toLocaleDateString()}`
+    const div = document.createElement('div')
+
+    const currencyFormat = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    })
+    // Details Top
+    div.appendChild(
+      createDetailsTop(
+        imgSrc,
+        title,
+        vote_average.toFixed(1),
+        releaseDateString,
+        overview,
+        homepage,
+        genres
+      )
+    )
+    // Details Bottom
+    div.appendChild(
+      createMovieDetailsBottom(
+        currencyFormat.format(budget),
+        currencyFormat.format(revenue),
+        `${runtime} minutes`,
+        status,
+        production_countries.map((c) => c.name)
+      )
+    )
+    document.querySelector('#movie-details')?.appendChild(div)
+  }
 }
 
 // UTILITY FUNCTIONS
@@ -143,7 +249,7 @@ function createDetailsTop(
   releaseDateString,
   overview,
   homePageLink,
-  genres
+  genres = []
 ) {
   const div = document.createElement('div')
   div.classList.add('details-top')
@@ -162,7 +268,7 @@ function createDetailsTop(
       <p>${overview}</p>
       <h5>Genres</h5>
       <ul class="list-group">
-      ${genres.map((g) => `<li>${g.name}</li>`)}.join(', )
+      ${genres.map((g) => `<li>${g.name}</li>`).join('')}
       </ul>
       <a href="${homePageLink}" target="_blank" class="btn">Visit Movie Homepage</a>
     </div>
@@ -171,19 +277,25 @@ function createDetailsTop(
 }
 
 // Create details bottom
-function createDetailsTBottom() {
+function createMovieDetailsBottom(
+  budget,
+  revenue,
+  runtime,
+  status,
+  productionCompanies
+) {
   const div = document.createElement('div')
   div.classList.add('details-bottom')
   div.innerHTML = `
       <h2>Movie Info</h2>
       <ul>
-        <li><span class="text-secondary">Budget:</span> $1,000,000</li>
-        <li><span class="text-secondary">Revenue:</span> $2,000,000</li>
-        <li><span class="text-secondary">Runtime:</span> 90 minutes</li>
-        <li><span class="text-secondary">Status:</span> Released</li>
+        <li><span class="text-secondary">Budget:</span> ${budget}</li>
+        <li><span class="text-secondary">Revenue:</span> ${revenue}</li>
+        <li><span class="text-secondary">Runtime:</span> ${runtime}</li>
+        <li><span class="text-secondary">Status:</span> ${status}</li>
       </ul>
       <h4>Production Companies</h4>
-      <div class="list-group">Company 1, Company 2, Company 3</div>
+      <div class="list-group">${productionCompanies.join(', ')}</div>
   `
   return div
 }
