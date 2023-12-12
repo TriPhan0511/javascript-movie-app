@@ -20,7 +20,7 @@
 // Global states
 const global = {
   api_key: '72597d8d62e1a0cc5f6e35a022fa82ea',
-  imagePath: 'https://image.tmdb.org/t/p/',
+  imageUrl: 'https://image.tmdb.org/t/p/',
 }
 
 function init() {
@@ -33,11 +33,12 @@ function init() {
       displayPopularShows()
       break
     case '/movie-details.html':
-      console.log('Movie Details')
+      // console.log('Movie Details')
       displayMovieDetails()
       break
     case '/tv-details.html':
       console.log('Show Details')
+      displayShowDetails()
       break
     case '/search.html':
       console.log('Search')
@@ -61,7 +62,7 @@ async function displayPopularMovies() {
   results.forEach(({ id, title, poster_path, release_date }) => {
     const link = `movie-details.html?id=${id}`
     const imgSrc = poster_path
-      ? `${global.imagePath}w500${poster_path}`
+      ? `${global.imageUrl}w500${poster_path}`
       : '/images/no-image.jpg'
     const releaseDateString = `Release Date: ${new Date(
       release_date
@@ -77,7 +78,7 @@ async function displayPopularShows() {
   results.forEach(({ id, name, poster_path, first_air_date }) => {
     const link = `tv-details.html?id=${id}`
     const imgSrc = poster_path
-      ? `${global.imagePath}w500${poster_path}`
+      ? `${global.imageUrl}w500${poster_path}`
       : '/images/no-image.jpg'
     const releaseDateString = `First Air Date: ${new Date(
       first_air_date
@@ -93,6 +94,7 @@ async function displayMovieDetails() {
   const id = urlParams.get('id')
   if (id) {
     const {
+      backdrop_path,
       poster_path,
       title,
       vote_average,
@@ -100,26 +102,27 @@ async function displayMovieDetails() {
       overview,
       homepage,
       genres,
-      budget,
-      revenue,
-      runtime,
-      status,
-      production_countries,
+      // budget,
+      // revenue,
+      // runtime,
+      // status,
+      // production_countries,
+      ...rest
     } = await fetchData(`movie/${id}`)
-
-    const imgSrc = poster_path
-      ? `${global.imagePath}w500${poster_path}`
-      : '/images/no-image.jpg'
-    const releaseDateString = `Release Date: ${new Date(
-      release_date
-    ).toLocaleDateString()}`
-    const div = document.createElement('div')
-
+    const { budget, revenue, runtime, status, production_countries } = rest
+    console.log(rest)
     const currencyFormat = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
     })
+    const imgSrc = poster_path
+      ? `${global.imageUrl}w500${poster_path}`
+      : '/images/no-image.jpg'
+    const releaseDateString = `Release Date: ${new Date(
+      release_date
+    ).toLocaleDateString()}`
+    const div = document.createElement('div')
     // Details Top
     div.appendChild(
       createDetailsTop(
@@ -129,7 +132,8 @@ async function displayMovieDetails() {
         releaseDateString,
         overview,
         homepage,
-        genres
+        genres,
+        'movie'
       )
     )
     // Details Bottom
@@ -142,66 +146,131 @@ async function displayMovieDetails() {
         production_countries.map((c) => c.name)
       )
     )
-    document.querySelector('#movie-details')?.appendChild(div)
+    // Append children
+    const targetDiv = document.querySelector('#movie-details')
+    if (targetDiv) {
+      targetDiv.appendChild(setBackgroundImage(backdrop_path))
+      targetDiv.appendChild(div)
+    }
   }
 }
-
-// Display tv show details
+// async function displayMovieDetails() {
+//   const urlParams = new URLSearchParams(window.location.search)
+//   const id = urlParams.get('id')
+//   if (id) {
+//     const {
+//       poster_path,
+//       title,
+//       vote_average,
+//       release_date,
+//       overview,
+//       homepage,
+//       genres,
+//       backdrop_path,
+//       budget,
+//       revenue,
+//       runtime,
+//       status,
+//       production_countries,
+//     } = await fetchData(`movie/${id}`)
+//     const currencyFormat = new Intl.NumberFormat('en-US', {
+//       style: 'currency',
+//       currency: 'USD',
+//       minimumFractionDigits: 0,
+//     })
+//     const imgSrc = poster_path
+//       ? `${global.imageUrl}w500${poster_path}`
+//       : '/images/no-image.jpg'
+//     const releaseDateString = `Release Date: ${new Date(
+//       release_date
+//     ).toLocaleDateString()}`
+//     const div = document.createElement('div')
+//     // Details Top
+//     div.appendChild(
+//       createDetailsTop(
+//         imgSrc,
+//         title,
+//         vote_average.toFixed(1),
+//         releaseDateString,
+//         overview,
+//         homepage,
+//         genres,
+//         'movie'
+//       )
+//     )
+//     // Details Bottom
+//     div.appendChild(
+//       createMovieDetailsBottom(
+//         currencyFormat.format(budget),
+//         currencyFormat.format(revenue),
+//         `${runtime} minutes`,
+//         status,
+//         production_countries.map((c) => c.name)
+//       )
+//     )
+//     // Append children
+//     const targetDiv = document.querySelector('#movie-details')
+//     if (targetDiv) {
+//       targetDiv.appendChild(setBackgroundImage(backdrop_path))
+//       targetDiv.appendChild(div)
+//     }
+//   }
+// }
+// Display show details
 async function displayShowDetails() {
   const urlParams = new URLSearchParams(window.location.search)
   const id = urlParams.get('id')
   if (id) {
     const {
       poster_path,
-      title,
+      name,
       vote_average,
-      release_date,
+      last_air_date,
       overview,
       homepage,
       genres,
-      budget,
-      revenue,
-      runtime,
-      status,
+      backdrop_path,
       production_countries,
-    } = await fetchData(`movie/${id}`)
+      status,
+      number_of_episodes,
+      last_episode_to_air,
+    } = await fetchData(`tv/${id}`)
 
     const imgSrc = poster_path
-      ? `${global.imagePath}w500${poster_path}`
+      ? `${global.imageUrl}w500${poster_path}`
       : '/images/no-image.jpg'
-    const releaseDateString = `Release Date: ${new Date(
-      release_date
+    const releaseDateString = `Last Air Date: ${new Date(
+      last_air_date
     ).toLocaleDateString()}`
     const div = document.createElement('div')
-
-    const currencyFormat = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-    })
     // Details Top
     div.appendChild(
       createDetailsTop(
         imgSrc,
-        title,
+        name,
         vote_average.toFixed(1),
         releaseDateString,
         overview,
         homepage,
-        genres
+        genres,
+        'show'
       )
     )
     // Details Bottom
     div.appendChild(
-      createMovieDetailsBottom(
-        currencyFormat.format(budget),
-        currencyFormat.format(revenue),
-        `${runtime} minutes`,
+      createShowDetailsBottom(
+        number_of_episodes,
+        last_air_date,
         status,
         production_countries.map((c) => c.name)
       )
     )
-    document.querySelector('#movie-details')?.appendChild(div)
+    // Append children
+    const targetDiv = document.querySelector('#show-details')
+    if (targetDiv) {
+      targetDiv.appendChild(setBackgroundImage(backdrop_path))
+      targetDiv.appendChild(div)
+    }
   }
 }
 
@@ -249,7 +318,8 @@ function createDetailsTop(
   releaseDateString,
   overview,
   homePageLink,
-  genres = []
+  genres = [],
+  type = 'movie'
 ) {
   const div = document.createElement('div')
   div.classList.add('details-top')
@@ -270,13 +340,15 @@ function createDetailsTop(
       <ul class="list-group">
       ${genres.map((g) => `<li>${g.name}</li>`).join('')}
       </ul>
-      <a href="${homePageLink}" target="_blank" class="btn">Visit Movie Homepage</a>
+      <a href="${homePageLink}" target="_blank" class="btn">Visit ${
+    type === 'movie' ? 'Movie' : 'Show'
+  } Homepage</a>
     </div>
   `
   return div
 }
 
-// Create details bottom
+// Create movie details bottom
 function createMovieDetailsBottom(
   budget,
   revenue,
@@ -297,6 +369,46 @@ function createMovieDetailsBottom(
       <h4>Production Companies</h4>
       <div class="list-group">${productionCompanies.join(', ')}</div>
   `
+  return div
+}
+
+// Create tv show details bottom
+function createShowDetailsBottom(
+  numberOfEpisodes,
+  lastEpisode,
+  status,
+  productionCompanies
+) {
+  const div = document.createElement('div')
+  div.classList.add('details-bottom')
+  div.innerHTML = `
+      <h2>Show Info</h2>
+      <ul>
+        <li><span class="text-secondary">Number Of Episodes:</span> ${numberOfEpisodes}</li>
+        <li><span class="text-secondary">Last Episode To Air:</span> ${lastEpisode}</li>
+        <li><span class="text-secondary">Status:</span> ${status}</li>
+      </ul>
+      <h4>Production Companies</h4>
+      <div class="list-group">${productionCompanies.join(', ')}</div>
+  `
+  return div
+}
+
+// Display backdrop on details page
+function setBackgroundImage(imagePath) {
+  const div = document.createElement('div')
+  // div.style.backgroundImage = `url(https://image.tmdb.org/t/p/original/${backgroundPath})`
+  div.style.backgroundImage = `url(${global.imageUrl}original${imagePath})`
+  div.style.backgroundRepeat = 'no-repeat'
+  div.style.backgroundPosition = 'center'
+  div.style.backgroundSize = 'cover'
+  div.style.width = '100vw'
+  div.style.height = '100vh'
+  div.style.position = 'absolute'
+  div.style.top = '0'
+  div.style.left = '0'
+  div.style.zIndex = '-1'
+  div.style.opacity = '0.1'
   return div
 }
 
