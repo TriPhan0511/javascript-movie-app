@@ -33,12 +33,11 @@ function init() {
       displayPopularShows()
       break
     case '/movie-details.html':
-      // console.log('Movie Details')
-      displayMovieDetails()
+      displayMovieDetails('movie')
       break
     case '/tv-details.html':
       console.log('Show Details')
-      displayShowDetails()
+      // displayShowDetails()
       break
     case '/search.html':
       console.log('Search')
@@ -89,190 +88,84 @@ async function displayPopularShows() {
 }
 
 // Display movie details
-async function displayMovieDetails() {
+async function displayMovieDetails(type = 'movie') {
   const urlParams = new URLSearchParams(window.location.search)
   const id = urlParams.get('id')
   if (id) {
-    const {
-      backdrop_path,
-      poster_path,
-      title,
-      vote_average,
-      release_date,
-      overview,
-      homepage,
-      genres,
-      // budget,
-      // revenue,
-      // runtime,
-      // status,
-      // production_countries,
-      ...rest
-    } = await fetchData(`movie/${id}`)
-    const { budget, revenue, runtime, status, production_countries } = rest
-    console.log(rest)
-    const currencyFormat = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-    })
-    const imgSrc = poster_path
-      ? `${global.imageUrl}w500${poster_path}`
-      : '/images/no-image.jpg'
-    const releaseDateString = `Release Date: ${new Date(
-      release_date
-    ).toLocaleDateString()}`
+    let result = await fetchData(`${type}/${id}`)
+    result = { ...result, type }
+
     const div = document.createElement('div')
     // Details Top
-    div.appendChild(
-      createDetailsTop(
-        imgSrc,
-        title,
-        vote_average.toFixed(1),
-        releaseDateString,
-        overview,
-        homepage,
-        genres,
-        'movie'
-      )
-    )
+    div.appendChild(createDetailsTop(result))
     // Details Bottom
-    div.appendChild(
-      createMovieDetailsBottom(
-        currencyFormat.format(budget),
-        currencyFormat.format(revenue),
-        `${runtime} minutes`,
-        status,
-        production_countries.map((c) => c.name)
-      )
-    )
+    const detailsBottom = createMovieDetailsBottom(result)
+    div.appendChild(detailsBottom)
     // Append children
     const targetDiv = document.querySelector('#movie-details')
     if (targetDiv) {
-      targetDiv.appendChild(setBackgroundImage(backdrop_path))
+      targetDiv.appendChild(setBackgroundImage(result.backdrop_path))
       targetDiv.appendChild(div)
     }
   }
 }
-// async function displayMovieDetails() {
+// Display show details
+// async function displayShowDetails() {
 //   const urlParams = new URLSearchParams(window.location.search)
 //   const id = urlParams.get('id')
 //   if (id) {
 //     const {
 //       poster_path,
-//       title,
+//       name,
 //       vote_average,
-//       release_date,
+//       last_air_date,
 //       overview,
 //       homepage,
 //       genres,
 //       backdrop_path,
-//       budget,
-//       revenue,
-//       runtime,
-//       status,
 //       production_countries,
-//     } = await fetchData(`movie/${id}`)
-//     const currencyFormat = new Intl.NumberFormat('en-US', {
-//       style: 'currency',
-//       currency: 'USD',
-//       minimumFractionDigits: 0,
-//     })
+//       status,
+//       number_of_episodes,
+//       last_episode_to_air,
+//     } = await fetchData(`tv/${id}`)
+
 //     const imgSrc = poster_path
 //       ? `${global.imageUrl}w500${poster_path}`
 //       : '/images/no-image.jpg'
-//     const releaseDateString = `Release Date: ${new Date(
-//       release_date
+//     const releaseDateString = `Last Air Date: ${new Date(
+//       last_air_date
 //     ).toLocaleDateString()}`
 //     const div = document.createElement('div')
 //     // Details Top
 //     div.appendChild(
 //       createDetailsTop(
 //         imgSrc,
-//         title,
+//         name,
 //         vote_average.toFixed(1),
 //         releaseDateString,
 //         overview,
 //         homepage,
 //         genres,
-//         'movie'
+//         'show'
 //       )
 //     )
 //     // Details Bottom
 //     div.appendChild(
-//       createMovieDetailsBottom(
-//         currencyFormat.format(budget),
-//         currencyFormat.format(revenue),
-//         `${runtime} minutes`,
+//       createShowDetailsBottom(
+//         number_of_episodes,
+//         last_air_date,
 //         status,
 //         production_countries.map((c) => c.name)
 //       )
 //     )
 //     // Append children
-//     const targetDiv = document.querySelector('#movie-details')
+//     const targetDiv = document.querySelector('#show-details')
 //     if (targetDiv) {
 //       targetDiv.appendChild(setBackgroundImage(backdrop_path))
 //       targetDiv.appendChild(div)
 //     }
 //   }
 // }
-// Display show details
-async function displayShowDetails() {
-  const urlParams = new URLSearchParams(window.location.search)
-  const id = urlParams.get('id')
-  if (id) {
-    const {
-      poster_path,
-      name,
-      vote_average,
-      last_air_date,
-      overview,
-      homepage,
-      genres,
-      backdrop_path,
-      production_countries,
-      status,
-      number_of_episodes,
-      last_episode_to_air,
-    } = await fetchData(`tv/${id}`)
-
-    const imgSrc = poster_path
-      ? `${global.imageUrl}w500${poster_path}`
-      : '/images/no-image.jpg'
-    const releaseDateString = `Last Air Date: ${new Date(
-      last_air_date
-    ).toLocaleDateString()}`
-    const div = document.createElement('div')
-    // Details Top
-    div.appendChild(
-      createDetailsTop(
-        imgSrc,
-        name,
-        vote_average.toFixed(1),
-        releaseDateString,
-        overview,
-        homepage,
-        genres,
-        'show'
-      )
-    )
-    // Details Bottom
-    div.appendChild(
-      createShowDetailsBottom(
-        number_of_episodes,
-        last_air_date,
-        status,
-        production_countries.map((c) => c.name)
-      )
-    )
-    // Append children
-    const targetDiv = document.querySelector('#show-details')
-    if (targetDiv) {
-      targetDiv.appendChild(setBackgroundImage(backdrop_path))
-      targetDiv.appendChild(div)
-    }
-  }
-}
 
 // UTILITY FUNCTIONS
 
@@ -311,36 +204,42 @@ function createCard(link, title, imgSrc, releaseDateString) {
 }
 
 // Create details top
-function createDetailsTop(
-  imgSrc,
+function createDetailsTop({
+  poster_path,
   title,
-  voteAverage,
-  releaseDateString,
+  vote_average,
+  release_date,
   overview,
-  homePageLink,
-  genres = [],
-  type = 'movie'
-) {
+  homepage,
+  genres,
+  type,
+}) {
   const div = document.createElement('div')
   div.classList.add('details-top')
   div.innerHTML = `
     <div>
       <img
-        src="${imgSrc}"
+        src="${
+          poster_path
+            ? `${global.imageUrl}w500${poster_path}`
+            : '/images/no-image.jpg'
+        }"
         alt="${title}"
         class="card-img-top"
       />
     </div>
     <div>
       <h2>${title}</h2>
-      <p><i class="fas fa-star text-primary"></i> ${voteAverage} / 10</p>
-      <p class="text-muted">${releaseDateString}</p>
+      <p><i class="fas fa-star text-primary"></i> ${vote_average.toFixed(
+        1
+      )} / 10</p>
+      <p class="text-muted">${new Date(release_date).toLocaleDateString()}</p>
       <p>${overview}</p>
       <h5>Genres</h5>
       <ul class="list-group">
       ${genres.map((g) => `<li>${g.name}</li>`).join('')}
       </ul>
-      <a href="${homePageLink}" target="_blank" class="btn">Visit ${
+      <a href="${homepage}" target="_blank" class="btn">Visit ${
     type === 'movie' ? 'Movie' : 'Show'
   } Homepage</a>
     </div>
@@ -349,28 +248,72 @@ function createDetailsTop(
 }
 
 // Create movie details bottom
-function createMovieDetailsBottom(
+function createMovieDetailsBottom({
+  production_countries,
+  status,
   budget,
   revenue,
   runtime,
-  status,
-  productionCompanies
-) {
+}) {
+  const currencyFormat = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+  })
   const div = document.createElement('div')
   div.classList.add('details-bottom')
   div.innerHTML = `
       <h2>Movie Info</h2>
       <ul>
-        <li><span class="text-secondary">Budget:</span> ${budget}</li>
-        <li><span class="text-secondary">Revenue:</span> ${revenue}</li>
-        <li><span class="text-secondary">Runtime:</span> ${runtime}</li>
-        <li><span class="text-secondary">Status:</span> ${status}</li>
+        <li><span class="text-secondary">Budget: </span>${currencyFormat.format(
+          budget
+        )}</li>
+        <li><span class="text-secondary">Revenue: </span>${currencyFormat.format(
+          revenue
+        )}</li>
+        <li><span class="text-secondary">Runtime: </span>${runtime}</li>
+        <li><span class="text-secondary">Status: </span>${status}</li>
       </ul>
       <h4>Production Companies</h4>
-      <div class="list-group">${productionCompanies.join(', ')}</div>
+      <div class="list-group">${production_countries
+        .map((c) => c.name)
+        .join(', ')}</div>
   `
   return div
 }
+// function createMovieDetailsBottom({
+//   production_countries,
+//   status,
+//   budget,
+//   revenue,
+//   runtime,
+// }) {
+//   const currencyFormat = new Intl.NumberFormat('en-US', {
+//     style: 'currency',
+//     currency: 'USD',
+//     minimumFractionDigits: 0,
+//   })
+//   const div = document.createElement('div')
+//   div.classList.add('details-bottom')
+//   div.innerHTML = `
+//       <h2>Movie Info</h2>
+//       <ul>
+//         <li><span class="text-secondary">Budget: </span>${currencyFormat.format(
+//           budget
+//         )}</li>
+//         <li><span class="text-secondary">Revenue: </span>${currencyFormat.format(
+//           revenue
+//         )}</li>
+//         <li><span class="text-secondary">Runtime: </span>${runtime}</li>
+//         <li><span class="text-secondary">Status: </span>${status}</li>
+//       </ul>
+//       <h4>Production Companies</h4>
+//       <div class="list-group">${production_countries
+//         .map((c) => c.name)
+//         .join(', ')}</div>
+//   `
+//   return div
+// }
 
 // Create tv show details bottom
 function createShowDetailsBottom(
