@@ -33,11 +33,10 @@ function init() {
       displayPopularShows()
       break
     case '/movie-details.html':
-      displayMovieDetails('movie')
+      displayDetails('movie')
       break
     case '/tv-details.html':
-      console.log('Show Details')
-      // displayShowDetails()
+      displayDetails('show')
       break
     case '/search.html':
       console.log('Search')
@@ -88,84 +87,70 @@ async function displayPopularShows() {
 }
 
 // Display movie details
-async function displayMovieDetails(type = 'movie') {
+async function displayDetails(type = 'movie') {
   const urlParams = new URLSearchParams(window.location.search)
   const id = urlParams.get('id')
   if (id) {
-    let result = await fetchData(`${type}/${id}`)
-    result = { ...result, type }
-
     const div = document.createElement('div')
-    // Details Top
-    div.appendChild(createDetailsTop(result))
-    // Details Bottom
-    const detailsBottom = createMovieDetailsBottom(result)
-    div.appendChild(detailsBottom)
+    let targetDiv, result
+    if (type === 'movie') {
+      targetDiv = document.querySelector('#movie-details')
+      result = await fetchData(`movie/${id}`)
+      const details = [
+        {
+          text: 'budget',
+          val: result.budget,
+        },
+        {
+          text: 'revenue',
+          val: result.revenue,
+        },
+        {
+          text: 'runtime',
+          val: result.runtime,
+        },
+        {
+          text: 'status',
+          val: result.status,
+        },
+      ]
+      result = { ...result, details, type }
+    } else if (type === 'show') {
+      targetDiv = document.querySelector('#show-details')
+      result = await fetchData(`tv/${id}`)
+      const details = [
+        {
+          text: 'Number Of Episodes',
+          val: result.number_of_episodes,
+        },
+        {
+          text: 'Last Episode To Air',
+          val: result.last_episode_to_air.name,
+        },
+        {
+          text: 'status',
+          val: result.status,
+        },
+      ]
+      result = {
+        ...result,
+        release_date: result.first_air_date,
+        title: result.name,
+        details,
+        type,
+      }
+    }
     // Append children
-    const targetDiv = document.querySelector('#movie-details')
     if (targetDiv) {
-      targetDiv.appendChild(setBackgroundImage(result.backdrop_path))
+      const detailsTop = createDetailsTop(result)
+      const detailsBottom = createDetailsBottom(result)
+      div.appendChild(detailsTop)
+      div.appendChild(detailsBottom)
       targetDiv.appendChild(div)
+      targetDiv.appendChild(setBackgroundImage(result.backdrop_path))
     }
   }
 }
-// Display show details
-// async function displayShowDetails() {
-//   const urlParams = new URLSearchParams(window.location.search)
-//   const id = urlParams.get('id')
-//   if (id) {
-//     const {
-//       poster_path,
-//       name,
-//       vote_average,
-//       last_air_date,
-//       overview,
-//       homepage,
-//       genres,
-//       backdrop_path,
-//       production_countries,
-//       status,
-//       number_of_episodes,
-//       last_episode_to_air,
-//     } = await fetchData(`tv/${id}`)
-
-//     const imgSrc = poster_path
-//       ? `${global.imageUrl}w500${poster_path}`
-//       : '/images/no-image.jpg'
-//     const releaseDateString = `Last Air Date: ${new Date(
-//       last_air_date
-//     ).toLocaleDateString()}`
-//     const div = document.createElement('div')
-//     // Details Top
-//     div.appendChild(
-//       createDetailsTop(
-//         imgSrc,
-//         name,
-//         vote_average.toFixed(1),
-//         releaseDateString,
-//         overview,
-//         homepage,
-//         genres,
-//         'show'
-//       )
-//     )
-//     // Details Bottom
-//     div.appendChild(
-//       createShowDetailsBottom(
-//         number_of_episodes,
-//         last_air_date,
-//         status,
-//         production_countries.map((c) => c.name)
-//       )
-//     )
-//     // Append children
-//     const targetDiv = document.querySelector('#show-details')
-//     if (targetDiv) {
-//       targetDiv.appendChild(setBackgroundImage(backdrop_path))
-//       targetDiv.appendChild(div)
-//     }
-//   }
-// }
 
 // UTILITY FUNCTIONS
 
@@ -214,125 +199,71 @@ function createDetailsTop({
   genres,
   type,
 }) {
+  const imgSrc = poster_path
+    ? `${global.imageUrl}w500${poster_path}`
+    : '/images/no-image.jpg'
+  const dateString = `${
+    type === 'movie' ? 'Release' : 'First Air'
+  } Date: ${new Date(release_date).toLocaleDateString()}`
+  const genresString = genres.map((g) => `<li>${g.name}</li>`).join('')
+  const hompageText = `Visit ${type === 'movie' ? 'Movie' : 'Show'} Homepage`
+  vote_average = vote_average.toFixed(1)
+  // Create a new div
   const div = document.createElement('div')
   div.classList.add('details-top')
   div.innerHTML = `
     <div>
       <img
-        src="${
-          poster_path
-            ? `${global.imageUrl}w500${poster_path}`
-            : '/images/no-image.jpg'
-        }"
+        src="${imgSrc}"
         alt="${title}"
         class="card-img-top"
       />
     </div>
     <div>
       <h2>${title}</h2>
-      <p><i class="fas fa-star text-primary"></i> ${vote_average.toFixed(
-        1
-      )} / 10</p>
-      <p class="text-muted">${new Date(release_date).toLocaleDateString()}</p>
+      <p><i class="fas fa-star text-secondary"></i> ${vote_average} / 10</p>
+      <p class="text-muted">${dateString}</p>
       <p>${overview}</p>
       <h5>Genres</h5>
       <ul class="list-group">
-      ${genres.map((g) => `<li>${g.name}</li>`).join('')}
+      ${genresString}
       </ul>
-      <a href="${homepage}" target="_blank" class="btn">Visit ${
-    type === 'movie' ? 'Movie' : 'Show'
-  } Homepage</a>
+      <a href="${homepage}" target="_blank" class="btn">${hompageText}</a>
     </div>
   `
   return div
 }
 
-// Create movie details bottom
-function createMovieDetailsBottom({
-  production_countries,
-  status,
-  budget,
-  revenue,
-  runtime,
-}) {
+// Create Details Bottom
+function createDetailsBottom({ type, production_countries, details }) {
   const currencyFormat = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
   })
+  const heading = `${type === 'movie' ? 'Movie' : 'Show'} Info`
   const div = document.createElement('div')
   div.classList.add('details-bottom')
   div.innerHTML = `
-      <h2>Movie Info</h2>
+      <h2>${heading}</h2>
       <ul>
-        <li><span class="text-secondary">Budget: </span>${currencyFormat.format(
-          budget
-        )}</li>
-        <li><span class="text-secondary">Revenue: </span>${currencyFormat.format(
-          revenue
-        )}</li>
-        <li><span class="text-secondary">Runtime: </span>${runtime}</li>
-        <li><span class="text-secondary">Status: </span>${status}</li>
-      </ul>
+          ${details
+            .map((item) => {
+              let { text, val } = item
+              if (text === 'budget' || text === 'revenue') {
+                val = currencyFormat.format(val)
+              }
+              if (text === 'runtime') {
+                val = `${val} minutes`
+              }
+              return `<li><span class="text-secondary">${text.toUpperCase()}: </span>${val}</li>`
+            })
+            .join('')}
+        </ul>
       <h4>Production Companies</h4>
       <div class="list-group">${production_countries
         .map((c) => c.name)
         .join(', ')}</div>
-  `
-  return div
-}
-// function createMovieDetailsBottom({
-//   production_countries,
-//   status,
-//   budget,
-//   revenue,
-//   runtime,
-// }) {
-//   const currencyFormat = new Intl.NumberFormat('en-US', {
-//     style: 'currency',
-//     currency: 'USD',
-//     minimumFractionDigits: 0,
-//   })
-//   const div = document.createElement('div')
-//   div.classList.add('details-bottom')
-//   div.innerHTML = `
-//       <h2>Movie Info</h2>
-//       <ul>
-//         <li><span class="text-secondary">Budget: </span>${currencyFormat.format(
-//           budget
-//         )}</li>
-//         <li><span class="text-secondary">Revenue: </span>${currencyFormat.format(
-//           revenue
-//         )}</li>
-//         <li><span class="text-secondary">Runtime: </span>${runtime}</li>
-//         <li><span class="text-secondary">Status: </span>${status}</li>
-//       </ul>
-//       <h4>Production Companies</h4>
-//       <div class="list-group">${production_countries
-//         .map((c) => c.name)
-//         .join(', ')}</div>
-//   `
-//   return div
-// }
-
-// Create tv show details bottom
-function createShowDetailsBottom(
-  numberOfEpisodes,
-  lastEpisode,
-  status,
-  productionCompanies
-) {
-  const div = document.createElement('div')
-  div.classList.add('details-bottom')
-  div.innerHTML = `
-      <h2>Show Info</h2>
-      <ul>
-        <li><span class="text-secondary">Number Of Episodes:</span> ${numberOfEpisodes}</li>
-        <li><span class="text-secondary">Last Episode To Air:</span> ${lastEpisode}</li>
-        <li><span class="text-secondary">Status:</span> ${status}</li>
-      </ul>
-      <h4>Production Companies</h4>
-      <div class="list-group">${productionCompanies.join(', ')}</div>
   `
   return div
 }
