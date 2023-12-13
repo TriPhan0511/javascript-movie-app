@@ -4,14 +4,19 @@ const global = {
     apiUrl: 'https://api.themoviedb.org/3/',
     apiKey: '72597d8d62e1a0cc5f6e35a022fa82ea',
     imageUrl: 'https://image.tmdb.org/t/p/',
-    // userName: 'triphan',
-    // pw:'City+NewCode'
   },
   search: {
     type: new URLSearchParams(window.location.search).get('type'),
     searchTerm: new URLSearchParams(window.location.search).get('search-term'),
     page: 1,
   },
+  // extraInfo: {
+  //   themoviedborg: {
+  //     userName: 'triphan',
+  //     pw: 'City+newcode',
+  //   },
+  //   nelifyLink: 'https://javascript-flixx-app.netlify.app/',
+  // },
 }
 
 // Initialize app
