@@ -1,22 +1,3 @@
-// Fetch Data
-// Popular movies
-// `https://api.themoviedb.org/3/movie/popular?language=en-US`
-// Popular TV Shows
-// `https://api.themoviedb.org/3/tv/popular?language=en-US`
-// Movie Details
-// `https://api.themoviedb.org/3/movie/movie_id?language=en-US`
-// TV Show Details
-// `https://api.themoviedb.org/3/tv/series_id?language=en-US`
-// Now playing
-// `https://api.themoviedb.org/3/movie/movie/now_playing?language=en-US`
-// Search Movie/Show
-// https://api.themoviedb.org/3/search/movie?language=en-US&query=$freelance&page=1
-// https://api.themoviedb.org/3/search/tv?language=en-US&query=$freelance&page=1
-
-// const API_KEY = '72597d8d62e1a0cc5f6e35a022fa82ea'
-
-// --------------------------------------------------------------------------------------
-
 // Global states
 const global = {
   api: {
@@ -24,8 +5,14 @@ const global = {
     apiKey: '72597d8d62e1a0cc5f6e35a022fa82ea',
     imageUrl: 'https://image.tmdb.org/t/p/',
   },
+  search: {
+    type: new URLSearchParams(window.location.search).get('type'),
+    searchTerm: new URLSearchParams(window.location.search).get('search-term'),
+    page: 1,
+  },
 }
 
+// Initialize app
 function init() {
   switch (window.location.pathname) {
     case '/':
@@ -48,17 +35,29 @@ function init() {
       break
   }
   activeLink()
+  addEventListenersForButtons()
 }
 
-// Fectch data from https://themoviedb.org
+// Add DOMContentLoaded event listener to document
+document.addEventListener('DOMContentLoaded', init)
+
+// Fetch data from https://themoviedb.org
 async function fetchData(endpoint = 'movie/popular') {
   showSpinner()
   let response = await fetch(
     `${global.api.apiUrl}${endpoint}?api_key=${global.api.apiKey}&language=en-US`
   )
-  // let response = await fetch(
-  //   `https://api.themoviedb.org/3/${endpoint}?api_key=${global.apiKey}&language=en-US`
-  // )
+  response = await response.json()
+  hideSpinner()
+  return response
+}
+
+// Search and fetch data from https://themoviedb.org
+async function search(endpoint, searchTerm, page = 1) {
+  showSpinner()
+  let response = await fetch(
+    `${global.api.apiUrl}${endpoint}?api_key=${global.api.apiKey}&language=en-US&query=${searchTerm}&page=${page}`
+  )
   response = await response.json()
   hideSpinner()
   return response
@@ -96,7 +95,7 @@ async function displayPopularShows() {
   })
 }
 
-// Display movie details
+// Display movie/show details
 async function displayDetails(type = 'movie') {
   const urlParams = new URLSearchParams(window.location.search)
   const id = urlParams.get('id')
@@ -162,12 +161,101 @@ async function displayDetails(type = 'movie') {
   }
 }
 
-// Display search results
-function displaySearchResults() {
-  const urlParams = new URLSearchParams(window.location.search)
-  const type = urlParams.get('type')
-  const searchTerm = urlParams.get('search-term')
-  console.log(type, searchTerm)
+// Display search results (movie/show)
+async function displaySearchResults(currentPage = 1) {
+  // Validate
+  if (!global.search.type) {
+    return
+  }
+  if (!global.search.searchTerm) {
+    showAlert(
+      document.querySelector('#alert'),
+      'You should eneter a search term.'
+    )
+    return
+  }
+  // Search and fetch data from API
+  let { results, page, total_pages } = await search(
+    `search/${global.search.type}`,
+    global.search.searchTerm,
+    currentPage
+  )
+  // Set global.search.page
+  global.search.page = page
+  // Set the "checked" attribute for radio buttons
+  document
+    .querySelector(`input#${global.search.type}`)
+    ?.setAttribute('checked', true)
+  // Set heading
+  const heading = document.querySelector('#search-results-heading')
+  if (heading) {
+    const h2 = document.createElement('h2')
+    h2.appendChild(
+      document.createTextNode(`Results for ${global.search.searchTerm}`)
+    )
+    heading.innerHTML = ''
+    heading.appendChild(h2)
+  }
+  // Set pagination text
+  const pageCounter = document.querySelector('.page-counter')
+  if (pageCounter) {
+    pageCounter.innerHTML = ''
+    pageCounter.appendChild(
+      document.createTextNode(`Page ${page} of ${total_pages}`)
+    )
+  }
+  // Set diabled attribute for prev and next buttons
+  const prevButton = document.querySelector('button#prev')
+  const nextButton = document.querySelector('button#next')
+  if (prevButton && nextButton) {
+    if (page === 1) {
+      prevButton.disabled = true
+    } else {
+      prevButton.disabled = false
+    }
+    if (page === total_pages) {
+      nextButton.disabled = true
+    } else {
+      nextButton.disabled = false
+    }
+  }
+  // Display results
+  results.forEach((item) => {
+    const { id, poster_path } = item
+    let title, release_date, dateString
+    if (global.search.type === 'movie') {
+      title = item.title
+      release_date = item.release_date
+      dateString = 'Release Date'
+    } else {
+      title = item.name
+      release_date = item.first_air_date
+      dateString = 'First Air Date'
+    }
+    const link = `${global.search.type}-details.html?id=${id}`
+    const imgSrc = poster_path
+      ? `${global.api.imageUrl}w500${poster_path}`
+      : '/images/no-image.jpg'
+    const releaseDateString = `${dateString}: ${new Date(
+      release_date
+    ).toLocaleDateString()}`
+    const card = createCard(link, title, imgSrc, releaseDateString)
+    document.querySelector('#search-results')?.appendChild(card)
+  })
+}
+
+// Add event listener for prev and next buttons
+function addEventListenersForButtons() {
+  document.querySelector('button#next')?.addEventListener('click', () => {
+    global.search.page++
+    document.querySelector('#search-results').innerHTML = ''
+    displaySearchResults(global.search.page)
+  })
+  document.querySelector('button#prev')?.addEventListener('click', () => {
+    global.search.page--
+    document.querySelector('#search-results').innerHTML = ''
+    displaySearchResults(global.search.page)
+  })
 }
 
 // UTILITY FUNCTIONS
@@ -363,13 +451,11 @@ function initSwiper() {
 // Validate search from
 function validateSearchForm() {
   document.querySelector('.search-form')?.addEventListener('submit', (e) => {
-    // console.log('valiadate')
-    // e.preventDefault()
     const input = document.querySelector('#search-term')
     if (input) {
       if (input.value.trim() === '') {
-        // alert('You should enter search term.')
-        showAlert('You should enter search term.')
+        const alertEle = document.querySelector('#alert')
+        showAlert(alertEle, 'You should enter search term.', 'alert error')
         input.value = ''
         input.focus()
         e.preventDefault()
@@ -377,39 +463,17 @@ function validateSearchForm() {
     }
   })
 }
-// function validateSearchForm() {
-//   document.querySelector('.search-form')?.addEventListener('submit', (e) => {
-//     const input = document.querySelector('#search-term')
-//     if (input) {
-//       if (input.value.trim() === '') {
-//         // alert('You should enter search term.')
-//         const alert = document.querySelector('#alert')
-//         if (alert) {
-//           alert.classList.add('alert', 'error')
-//           alert.textContent = 'You should enter search term.'
-//           setTimeout(() => {
-//             alert.remove()
-//           }, 2000)
-//         }
-//         input.value = ''
-//         input.focus()
-//         e.preventDefault()
-//         return
-//       }
-//     }
-//   })
-// }
 
 // Show alert
-function showAlert(message, className = 'error') {
-  const alertEle = document.createElement('div')
-  alertEle.classList.add('alert', className)
-  alertEle.appendChild(document.createTextNode(message))
-  document.querySelector('#alert')?.appendChild(alertEle)
-  setTimeout(() => {
-    alertEle.remove()
-  }, 2000)
+function showAlert(alertEle, msg, classes = 'alert error') {
+  if (alertEle) {
+    const div = document.createElement('div')
+    div.className = classes
+    div.appendChild(document.createTextNode(msg))
+    alertEle.innerHTML = ''
+    alertEle.appendChild(div)
+    setTimeout(() => {
+      div.remove()
+    }, 2000)
+  }
 }
-
-// Add DOMContentLoaded event listener to document
-document.addEventListener('DOMContentLoaded', init)
