@@ -19,15 +19,20 @@
 
 // Global states
 const global = {
-  api_key: '72597d8d62e1a0cc5f6e35a022fa82ea',
-  imageUrl: 'https://image.tmdb.org/t/p/',
+  api: {
+    apiUrl: 'https://api.themoviedb.org/3/',
+    apiKey: '72597d8d62e1a0cc5f6e35a022fa82ea',
+    imageUrl: 'https://image.tmdb.org/t/p/',
+  },
 }
 
 function init() {
   switch (window.location.pathname) {
     case '/':
     case '/index.html':
+      displaySlider()
       displayPopularMovies()
+      validateSearchForm()
       break
     case '/shows.html':
       displayPopularShows()
@@ -39,7 +44,7 @@ function init() {
       displayDetails('show')
       break
     case '/search.html':
-      console.log('Search')
+      displaySearchResults()
       break
   }
   activeLink()
@@ -47,10 +52,15 @@ function init() {
 
 // Fectch data from https://themoviedb.org
 async function fetchData(endpoint = 'movie/popular') {
+  showSpinner()
   let response = await fetch(
-    `https://api.themoviedb.org/3/${endpoint}?api_key=${global.api_key}&language=en-US`
+    `${global.api.apiUrl}${endpoint}?api_key=${global.api.apiKey}&language=en-US`
   )
+  // let response = await fetch(
+  //   `https://api.themoviedb.org/3/${endpoint}?api_key=${global.apiKey}&language=en-US`
+  // )
   response = await response.json()
+  hideSpinner()
   return response
 }
 
@@ -60,7 +70,7 @@ async function displayPopularMovies() {
   results.forEach(({ id, title, poster_path, release_date }) => {
     const link = `movie-details.html?id=${id}`
     const imgSrc = poster_path
-      ? `${global.imageUrl}w500${poster_path}`
+      ? `${global.api.imageUrl}w500${poster_path}`
       : '/images/no-image.jpg'
     const releaseDateString = `Release Date: ${new Date(
       release_date
@@ -76,7 +86,7 @@ async function displayPopularShows() {
   results.forEach(({ id, name, poster_path, first_air_date }) => {
     const link = `tv-details.html?id=${id}`
     const imgSrc = poster_path
-      ? `${global.imageUrl}w500${poster_path}`
+      ? `${global.api.imageUrl}w500${poster_path}`
       : '/images/no-image.jpg'
     const releaseDateString = `First Air Date: ${new Date(
       first_air_date
@@ -152,6 +162,14 @@ async function displayDetails(type = 'movie') {
   }
 }
 
+// Display search results
+function displaySearchResults() {
+  const urlParams = new URLSearchParams(window.location.search)
+  const type = urlParams.get('type')
+  const searchTerm = urlParams.get('search-term')
+  console.log(type, searchTerm)
+}
+
 // UTILITY FUNCTIONS
 
 // Activate link
@@ -165,6 +183,15 @@ function activeLink() {
       el.classList.add('active')
     }
   })
+}
+
+// Spinner
+function showSpinner() {
+  document.querySelector('.spinner')?.classList?.add('show')
+}
+
+function hideSpinner() {
+  document.querySelector('.spinner')?.classList?.remove('show')
 }
 
 // Create a card
@@ -200,7 +227,7 @@ function createDetailsTop({
   type,
 }) {
   const imgSrc = poster_path
-    ? `${global.imageUrl}w500${poster_path}`
+    ? `${global.api.imageUrl}w500${poster_path}`
     : '/images/no-image.jpg'
   const dateString = `${
     type === 'movie' ? 'Release' : 'First Air'
@@ -271,8 +298,7 @@ function createDetailsBottom({ type, production_countries, details }) {
 // Display backdrop on details page
 function setBackgroundImage(imagePath) {
   const div = document.createElement('div')
-  // div.style.backgroundImage = `url(https://image.tmdb.org/t/p/original/${backgroundPath})`
-  div.style.backgroundImage = `url(${global.imageUrl}original${imagePath})`
+  div.style.backgroundImage = `url(${global.api.imageUrl}original${imagePath})`
   div.style.backgroundRepeat = 'no-repeat'
   div.style.backgroundPosition = 'center'
   div.style.backgroundSize = 'cover'
@@ -284,6 +310,105 @@ function setBackgroundImage(imagePath) {
   div.style.zIndex = '-1'
   div.style.opacity = '0.1'
   return div
+}
+
+// Display Slider Movies
+async function displaySlider() {
+  const { results } = await fetchData('movie/now_playing')
+  results.forEach(({ id, title, poster_path, vote_average }) => {
+    const imgSrc = poster_path
+      ? `${global.api.imageUrl}w500${poster_path}`
+      : './images/no-image.jpg'
+    vote_average = vote_average.toFixed(1)
+    const div = document.createElement('div')
+    div.classList.add('swiper-slide')
+    div.innerHTML = `
+    <a href='movie-details.html?id=${id}'>
+      <img src='${imgSrc}' alt='${title}' />
+    </a>
+    <h4 class='swiper-rating'>
+      <i class='fas fa-star text-secondary'></i> ${vote_average} / 10
+    </h4>
+  `
+    document.querySelector('.swiper-wrapper')?.appendChild(div)
+    initSwiper()
+  })
+}
+
+// Init Swiper
+function initSwiper() {
+  const swiper = new Swiper('.swiper', {
+    slidesPerView: 1,
+    spaceBetween: 30,
+    freeMode: true,
+    loop: true,
+    autoplay: {
+      delay: 4000,
+      disableOnInteraction: false,
+    },
+    breakpoints: {
+      500: {
+        slidesPerView: 2,
+      },
+      700: {
+        slidesPerView: 3,
+      },
+      1200: {
+        slidesPerView: 4,
+      },
+    },
+  })
+}
+
+// Validate search from
+function validateSearchForm() {
+  document.querySelector('.search-form')?.addEventListener('submit', (e) => {
+    // console.log('valiadate')
+    // e.preventDefault()
+    const input = document.querySelector('#search-term')
+    if (input) {
+      if (input.value.trim() === '') {
+        // alert('You should enter search term.')
+        showAlert('You should enter search term.')
+        input.value = ''
+        input.focus()
+        e.preventDefault()
+      }
+    }
+  })
+}
+// function validateSearchForm() {
+//   document.querySelector('.search-form')?.addEventListener('submit', (e) => {
+//     const input = document.querySelector('#search-term')
+//     if (input) {
+//       if (input.value.trim() === '') {
+//         // alert('You should enter search term.')
+//         const alert = document.querySelector('#alert')
+//         if (alert) {
+//           alert.classList.add('alert', 'error')
+//           alert.textContent = 'You should enter search term.'
+//           setTimeout(() => {
+//             alert.remove()
+//           }, 2000)
+//         }
+//         input.value = ''
+//         input.focus()
+//         e.preventDefault()
+//         return
+//       }
+//     }
+//   })
+// }
+
+// Show alert
+function showAlert(message, className = 'error') {
+  const alertEle = document.createElement('div')
+  alertEle.classList.add('alert', className)
+  alertEle.appendChild(document.createTextNode(message))
+  document.querySelector('#alert')?.appendChild(alertEle)
+  setTimeout(() => {
+    alertEle.remove()
+  }, 2000)
 }
 
 // Add DOMContentLoaded event listener to document
