@@ -4,8 +4,6 @@ const global = {
     apiUrl: 'https://api.themoviedb.org/3/',
     apiKey: '72597d8d62e1a0cc5f6e35a022fa82ea',
     imageUrl: 'https://image.tmdb.org/t/p/',
-    // userName: 'triphan',
-    // pw:'City+NewCode'
   },
   search: {
     type: new URLSearchParams(window.location.search).get('type'),
@@ -20,19 +18,11 @@ function init() {
     case '/':
     case '/index.html':
       displaySlider()
-      displayPopularItems(
-        'movie/popular',
-        'movie',
-        document.querySelector('#popular-movies')
-      )
+      displayPopularMovies()
       validateSearchForm()
       break
     case '/shows.html':
-      displayPopularItems(
-        'tv/popular',
-        'show',
-        document.querySelector('#popular-shows')
-      )
+      displayPopularShows()
       break
     case '/movie-details.html':
       displayDetails('movie')
@@ -73,13 +63,35 @@ async function search(endpoint, searchTerm, page = 1) {
   return response
 }
 
-// Display popular movies/shows
-async function displayPopularItems(endpoint, type, targetEle) {
-  const { results } = await fetchData(endpoint)
-  displayResults({
-    results,
-    type,
-    targetEle,
+// Display popular movies
+async function displayPopularMovies() {
+  const { results } = await fetchData('movie/popular')
+  results.forEach(({ id, title, poster_path, release_date }) => {
+    const link = `movie-details.html?id=${id}`
+    const imgSrc = poster_path
+      ? `${global.api.imageUrl}w500${poster_path}`
+      : '/images/no-image.jpg'
+    const releaseDateString = `Release Date: ${new Date(
+      release_date
+    ).toLocaleDateString()}`
+    const card = createCard(link, title, imgSrc, releaseDateString)
+    document.querySelector('#popular-movies')?.appendChild(card)
+  })
+}
+
+// Display popular tv shows
+async function displayPopularShows() {
+  const { results } = await fetchData('tv/popular')
+  results.forEach(({ id, name, poster_path, first_air_date }) => {
+    const link = `tv-details.html?id=${id}`
+    const imgSrc = poster_path
+      ? `${global.api.imageUrl}w500${poster_path}`
+      : '/images/no-image.jpg'
+    const releaseDateString = `First Air Date: ${new Date(
+      first_air_date
+    ).toLocaleDateString()}`
+    const card = createCard(link, name, imgSrc, releaseDateString)
+    document.querySelector('#popular-shows')?.appendChild(card)
   })
 }
 
@@ -150,7 +162,7 @@ async function displayDetails(type = 'movie') {
 }
 
 // Display search results (movies/shows)
-async function displaySearchResults() {
+async function displaySearchResults(currentPage = 1) {
   // Validate
   if (!global.search.type) {
     return
@@ -163,17 +175,11 @@ async function displaySearchResults() {
     return
   }
   // Search and fetch data from API
-  const { results, page, total_pages } = await search(
+  let { results, page, total_pages } = await search(
     `search/${global.search.type}`,
     global.search.searchTerm,
-    global.search.page
+    currentPage
   )
-  // Display results
-  displayResults({
-    results,
-    type: global.search.type,
-    targetEle: document.querySelector('#search-results'),
-  })
   // Set global.search.page
   global.search.page = page
   // Set the "checked" attribute for radio buttons
@@ -198,7 +204,7 @@ async function displaySearchResults() {
       document.createTextNode(`Page ${page} of ${total_pages}`)
     )
   }
-  // Set disabled attribute for prev and next buttons
+  // Set diabled attribute for prev and next buttons
   const prevButton = document.querySelector('button#prev')
   const nextButton = document.querySelector('button#next')
   if (prevButton && nextButton) {
@@ -213,37 +219,29 @@ async function displaySearchResults() {
       nextButton.disabled = false
     }
   }
-}
-
-// Display results (movies/shows)
-function displayResults({ results, type, targetEle }) {
-  if (targetEle) {
-    results.forEach((item) => {
-      const { id, poster_path } = item
-      let title, release_date, dateString, linkText
-      if (type === 'movie') {
-        title = item.title
-        release_date = item.release_date
-        dateString = 'Release Date'
-        linkText = 'movie'
-      } else {
-        title = item.name
-        release_date = item.first_air_date
-        dateString = 'First Air Date'
-        linkText = 'tv'
-      }
-
-      const link = `${linkText}-details.html?id=${id}`
-      const imgSrc = poster_path
-        ? `${global.api.imageUrl}w500${poster_path}`
-        : '/images/no-image.jpg'
-      const releaseDateString = `${dateString}: ${new Date(
-        release_date
-      ).toLocaleDateString()}`
-      const card = createCard(link, title, imgSrc, releaseDateString)
-      targetEle.appendChild(card)
-    })
-  }
+  // Display results
+  results.forEach((item) => {
+    const { id, poster_path } = item
+    let title, release_date, dateString
+    if (global.search.type === 'movie') {
+      title = item.title
+      release_date = item.release_date
+      dateString = 'Release Date'
+    } else {
+      title = item.name
+      release_date = item.first_air_date
+      dateString = 'First Air Date'
+    }
+    const link = `${global.search.type}-details.html?id=${id}`
+    const imgSrc = poster_path
+      ? `${global.api.imageUrl}w500${poster_path}`
+      : '/images/no-image.jpg'
+    const releaseDateString = `${dateString}: ${new Date(
+      release_date
+    ).toLocaleDateString()}`
+    const card = createCard(link, title, imgSrc, releaseDateString)
+    document.querySelector('#search-results')?.appendChild(card)
+  })
 }
 
 // Add event listener for prev and next buttons
@@ -251,12 +249,12 @@ function addEventListenersForButtons() {
   document.querySelector('button#next')?.addEventListener('click', () => {
     global.search.page++
     document.querySelector('#search-results').innerHTML = ''
-    displaySearchResults()
+    displaySearchResults(global.search.page)
   })
   document.querySelector('button#prev')?.addEventListener('click', () => {
     global.search.page--
     document.querySelector('#search-results').innerHTML = ''
-    displaySearchResults()
+    displaySearchResults(global.search.page)
   })
 }
 
